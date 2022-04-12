@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.10)
+project(out)
+add_compile_options(-Wall)
+add_subdirectory(googletest)
+add_executable(${PROJECT_NAME} schedule.cpp)
+target_link_libraries(${PROJECT_NAME} gtest_main)
