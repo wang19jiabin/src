@@ -1,5 +1,4 @@
 #pragma once
-
 #include <memory>
 
 class Connection {
@@ -8,5 +7,5 @@ public:
   virtual ~Connection() = default;
   virtual bool read() = 0;
   virtual bool write() = 0;
-  virtual void reply(std::shared_ptr<struct Task>) = 0;
+  virtual void reply(std::unique_ptr<struct Task>) = 0;
 };

@@ -13,3 +13,4 @@ git_info()
 }
 
 PS1='\[\e[1;34m\]\w \[\e[1;31m\]`git_info`\[\e[m\]\$ '
+LANGUAGE=en_US.UTF-8

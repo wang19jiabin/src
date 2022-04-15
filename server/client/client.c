@@ -11,8 +11,8 @@ int Connect(const char *host, const char *port)
 		.ai_socktype = SOCK_STREAM
 	};
 
-	int err = getaddrinfo(host, port, &hints, &ais);
-	assert(!err);
+	int e = getaddrinfo(host, port, &hints, &ais);
+	assert(!e);
 
 	for (struct addrinfo * ai = ais; ai; ai = ai->ai_next) {
 		int fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
@@ -61,16 +61,16 @@ void *thread(void *p)
 
 int main(void)
 {
-	pthread_t tids[1000];
-	size_t n = sizeof(tids) / sizeof(tids[0]);
+	pthread_t t[1000];
+	size_t n = sizeof(t) / sizeof(t[0]);
 
 	for (size_t i = 0; i < n; ++i) {
-		int err = pthread_create(tids + i, NULL, thread, NULL);
-		assert(!err);
+		int e = pthread_create(t + i, NULL, thread, NULL);
+		assert(!e);
 	}
 
 	for (size_t i = 0; i < n; ++i) {
-		int err = pthread_join(tids[i], NULL);
-		assert(!err);
+		int e = pthread_join(t[i], NULL);
+		assert(!e);
 	}
 }

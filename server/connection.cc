@@ -14,14 +14,14 @@ public:
   ~ConnectionImpl();
   bool read() override;
   bool write() override;
-  void reply(std::shared_ptr<Task>) override;
+  void reply(std::unique_ptr<Task>) override;
 
 private:
   int _cfd;
   int _efd;
   std::string _reading;
   std::unique_ptr<Queue> _queue;
-  std::shared_ptr<Task> _sending;
+  std::unique_ptr<Task> _sending;
 };
 
 std::shared_ptr<Connection> Connection::create(int cfd, int efd) {
@@ -42,10 +42,8 @@ bool ConnectionImpl::read() {
     char *b = buf, *e;
     while ((e = std::find(b, buf + n, 0)) != buf + n) {
       _reading.append(b, e - b);
-      auto task = std::make_shared<Task>();
-      task->string = std::move(_reading);
-      task->connection = shared_from_this();
-      queue->push(task);
+      auto task = std::make_unique<Task>(std::move(_reading), weak_from_this());
+      queue->push(std::move(task));
       _reading.clear();
       b = e + 1;
     }
@@ -61,27 +59,24 @@ bool ConnectionImpl::read() {
 
 bool ConnectionImpl::write() {
   while (_sending || (_sending = _queue->pop())) {
-    size_t len = _sending->string.size() - _sending->sent;
-    ssize_t n = ::write(_cfd, _sending->string.c_str() + _sending->sent, len);
-    if (n < 0) {
+    ssize_t s = _sending->data.size() - _sending->sent;
+    ssize_t n = ::write(_cfd, _sending->data.data() + _sending->sent, s);
+    if (n < 0)
       return errno == EAGAIN;
-    }
 
-    if (n == len) {
+    if (n == s)
       _sending.reset();
-    } else {
+    else
       _sending->sent += n;
-    }
   }
 
   return true;
 }
 
-void ConnectionImpl::reply(std::shared_ptr<Task> t) {
-  _queue->push(t);
-  epoll_event ev = {};
+void ConnectionImpl::reply(std::unique_ptr<Task> t) {
+  _queue->push(std::move(t));
+  epoll_event ev = {EPOLLIN | EPOLLOUT | EPOLLET};
   ev.data.fd = _cfd;
-  ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
   int rv = epoll_ctl(_efd, EPOLL_CTL_MOD, _cfd, &ev);
   assert(!rv);
 }
